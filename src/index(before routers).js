@@ -4,7 +4,7 @@ const user = require('./models/user.js')
 const task = require('./models/task.js')
 
 const app = express();
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 3000 //default
 
 app.use(express.json()) //this will parse the incoming response from server(In post man we write in JSON for our convinence)
 //Note: In postman body we are sending some data back from server to express on request
