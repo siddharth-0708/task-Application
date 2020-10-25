@@ -12,15 +12,47 @@ const router = new express.Router() //routers also have same methods like app.ge
     //wont be visible in browser.But if u use get, u can see.so, check in postman
     //this is response to the request.So server response is this with 200 status
 //})
-router.post('/users',function(req,res){ 
-    const userData = new user.User(req.body) //user info like validation is in model.Here on post we are creating a new instance and passing the values whatever we are giving in the body while making the request.It is just like the query address.Then the validation is done and we are sending the data back again in response
-    userData.save().then(function(){ //this is a promise
-        res.send(userData) //sending back the data after validations and all
-    }).catch(function(e){
-        res.status(400)
-        res.send(e)
-    })
+router.post('/users',async function(req,res){ 
+
+    const userData = await new user.User(req.body)
+    const token = await userData.getUserAuthentication();
+    //await userData.save()
+    res.send(userData)
 })
+// router.post('/users',function(req,res){ 
+
+//     const userData = new user.User(req.body) //user info like validation is in model.Here on post we are creating a new instance and passing the values whatever we are giving in the body while making the request.It is just like the query address.Then the validation is done and we are sending the data back again in response
+//     userData.save().then(function(data){ //this is a promise
+//         res.send(data) //sending back the data after validations and all
+//     }).catch(function(e){
+//         res.status(400)
+//         res.send(e)
+//     })
+// })
+router.post('/users/login', async function(req,res) {
+    try {
+        const data = await user.User.getUserCredentials(req.body.email, req.body.password)
+        const token = await data.getUserAuthentication(); //this is a user instance function and can be access in schema methods
+        res.send({data, token})
+    } catch(e) {
+        console.log(e);
+        res.status(400).send()
+    }
+})
+// router.post('/users/login',function(req,res){ 
+//     try {
+//         const userData = user.User.getUserCredentials(req.body.email, req.body.password);
+//         userData.then(function(data){
+//             console.log("i am in data", data);
+//             res.send(data);
+//         }).catch(function(e){
+//             console.log(e);
+//         })
+//     } catch (error) {
+//         console.log(error);
+//         res.send(error);
+//     }
+// })
 router.get('/users',function(req,res){
     user.User.find({}).then(function(data){ //check mongoosse queries for these CRUD methods. If nothing is given in brackets it will search for all the elements in table.returns a promise
         res.send(data); //in find give the function name where model was created
@@ -43,17 +75,52 @@ router.get('/users/:id',function(req,res){
         res.send(e).status(505);
     })
 })
-router.patch('/users/:id', function(req,res){
+router.patch('/users/:id', async function(req,res){
+    const updates = Object.keys(req.body); // returns the key parts of the object like name and all
+    const allowedUpdates = ["name","email","password","age"];
+
     const _id = req.params.id
-    user.User.findByIdAndUpdate(_id, req.body,{"new":true, "runValidators":true}).then(function(data){
+
+//METHOD 1
+
+//     console.log(_id);
+
+//    const userData = user.User.findById(req.params.id);
+//     console.log(userData)
+
+//     updates.forEach(function(update){
+//         userData[update] = req.body[update]
+//     })
+//    // await userData.save()
+//     res.send(userData);
+
+//METHOD 2 //TO MAKE USE OF SCHEMA
+    user.User.findById(_id).then(function(data){
         if(!data){ //if u are using many then give like completed true and update something for all trues.
             res.status(404).send('user not found')
             return
         }
-        res.send(data);
+        updates.forEach(function(update){
+            data[update] = req.body[update] //its like updating siddharth.name  = siddhant
+        })
+        data.save().then(function(data){ //saving the data
+            res.send(data);
+        })
     }).catch(function(e){
         res.send(e);
     })
+
+    //METHOD 3 --> it will bypass scehema
+
+    // user.User.findByIdAndUpdate(_id, req.body,{"new":true, "runValidators":true}).then(function(data){
+    //     if(!data){ //if u are using many then give like completed true and update something for all trues.
+    //         res.status(404).send('user not found')
+    //         return
+    //     }
+    //     res.send(data);
+    // }).catch(function(e){
+    //     res.send(e);
+    // })
 
 })
 router.delete('/users/:id', function(req,res){
