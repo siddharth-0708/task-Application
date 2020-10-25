@@ -33,7 +33,7 @@ router.post('/users/login', async function(req,res) {
     try {
         const data = await user.User.getUserCredentials(req.body.email, req.body.password)
         const token = await data.getUserAuthentication(); //this is a user instance function and can be access in schema methods
-        res.send({data, token})
+        res.send({data, token}) //stuck here. await data if not giving response in save()
     } catch(e) {
         console.log(e);
         res.status(400).send()
